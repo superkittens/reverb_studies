@@ -75,7 +75,7 @@ private:
     
     
     Slider roomSizeSlider;
-    Slider reverbDamp;
+    Slider reverbDampSlider;
     
     AudioFormatManager formatManager;
     String chosenPath;
@@ -86,21 +86,15 @@ private:
     ReferenceCountedArray<ReferenceCountedBuffer> buffers;
     ReferenceCountedBuffer::Ptr currentBuffer;
     
-//    LBCF<float> lbLeft[8];
-//    LBCF<float> lbRight[8];
-//
-//    LBCF<float> apLeft[4];
-//    LBCF<float> apRight[4];
-
-    APCF<float> apL[3];
-    APCF<float> apR[3];
-    FBCF<float> fbL[4];
-    FBCF<float> fbR[4];
+    LBCF<float> lb[2][8];
+    APCF<float> ap[2][4];
     
-    size_t apN[3] = {347, 113, 37};
-    float apGain = 0.7;
-    size_t fbN[4] = {1687, 1601, 2053, 2251};
-    float fbAm[4] = {-0.773, -0.802, -0.753, -0.733};
+    static constexpr float f = 0.84;
+    static constexpr float d = 0.2;
+    static constexpr float g = 0.5;
+    
+    size_t lbN[8] = {1557, 1617, 1491, 1422, 1277, 1356, 1188, 1116};
+    size_t apN[4] = {225, 556, 441, 341};
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MainComponent)
 };

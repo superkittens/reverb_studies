@@ -42,24 +42,33 @@ MainComponent::MainComponent() :    Thread("Background Thread")
     
     roomSizeSlider.setSliderStyle(Slider::RotaryHorizontalVerticalDrag);
     roomSizeSlider.setRange(0.01, 0.98);
-    roomSizeSlider.setValue(0.5);
+    roomSizeSlider.setValue(0.84);
     roomSizeSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::TextBoxBelow, true, 100, 20);
     addAndMakeVisible(roomSizeSlider);
     
-    for (auto i = 0; i < 3; ++i)
+    reverbDampSlider.setSliderStyle(Slider::RotaryHorizontalVerticalDrag);
+    reverbDampSlider.setRange(0.01, 0.80);
+    reverbDampSlider.setValue(0.2);
+    reverbDampSlider.setTextBoxStyle(Slider::TextEntryBoxPosition::TextBoxBelow, true, 100, 20);
+    addAndMakeVisible(reverbDampSlider);
+    
+    for (auto i = 0; i < 8; ++i)
     {
-        apL[i].setDelayLength(apN[i]);
-        apR[i].setDelayLength(apN[i]);
-        apL[i].setGain(apGain);
-        apR[i].setGain(apGain);
+        lb[0][i].setDelayLength(lbN[i]);
+        lb[0][i].setFilterParams(f, d);
+        
+        lb[1][i].setDelayLength(lbN[i]);
+        lb[1][i].setFilterParams(f, d);
+        
     }
     
     for (auto i = 0; i < 4; ++i)
     {
-        fbL[i].setDelayLength(fbN[i]);
-        fbR[i].setDelayLength(fbN[i]);
-        fbL[i].am = fbAm[i];
-        fbR[i].am = fbAm[i];
+        ap[0][i].setDelayLength(apN[i]);
+        ap[0][i].setGain(g);
+        
+        ap[1][i].setDelayLength(apN[i]);
+        ap[1][i].setGain(g);
     }
 }
 
@@ -114,23 +123,23 @@ void MainComponent::getNextAudioBlock (const AudioSourceChannelInfo& bufferToFil
             float left = currentAudioSampleBuffer->getSample(0, position);
             float right = currentAudioSampleBuffer->getSample(1, position);
             
-            for (auto i = 0; i < 3; ++i)
+            float output[2] = {0.0, 0.0};
+            
+            for (auto i = 0; i < 8; ++i)
             {
-                left = apL[i].tick(left);
-                right = apR[i].tick(right);
+                output[0] += lb[0][i].tick(left);
+                output[1] += lb[1][i].tick(right);
             }
             
-            float outLeft = 0;
-            float outRight = 0;
             
             for (auto i = 0; i < 4; ++i)
             {
-                outLeft += fbL[i].tick(left);
-                outRight += fbR[i].tick(right);
+                output[0] = ap[0][i].tick(output[0]);
+                output[1] = ap[1][i].tick(output[1]);
             }
 
-            *(bufferToFill.buffer->getWritePointer(0) + outputSamplesOffset) = outLeft;
-            *(bufferToFill.buffer->getWritePointer(1) + outputSamplesOffset) = outRight;
+            *(bufferToFill.buffer->getWritePointer(0) + outputSamplesOffset) = output[0];
+            *(bufferToFill.buffer->getWritePointer(1) + outputSamplesOffset) = output[1];
 
             outputSamplesRemaining -= 1;
             outputSamplesOffset += 1;
@@ -160,6 +169,16 @@ void MainComponent::paint (Graphics& g)
     g.fillAll (getLookAndFeel().findColour (ResizableWindow::backgroundColourId));
 
     // You can add your drawing code here!
+    float roomSize = (float)roomSizeSlider.getValue();
+    float damp = (float)reverbDampSlider.getValue();
+    for (auto i = 0; i < 8; ++i)
+    {
+        lb[0][i].setFilterParams(roomSize, damp);
+        lb[1][i].setFilterParams(roomSize, damp);
+    }
+    
+    g.drawFittedText("Room Size", 90, 80, 50, 20, Justification::centred, 1);
+    g.drawFittedText("Dry/Wet Mix", 220, 80, 100, 20, Justification::centred, 1);
 }
 
 void MainComponent::resized()
@@ -167,7 +186,8 @@ void MainComponent::resized()
     // This is called when the MainContentComponent is resized.
     // If you add any child components, this is where you should
     // update their positions.
-    roomSizeSlider.setBounds(40, 40, 150, 150);
+    roomSizeSlider.setBounds(40, 100, 150, 150);
+    reverbDampSlider.setBounds(200, 100, 150, 150);
     openButton.setBounds(10, 10, 50, 20);
     clearButton.setBounds(10, 40, 50, 20);
 }

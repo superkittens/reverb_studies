@@ -20,8 +20,8 @@ class FFCF
 public:
     FFCF();
     FFCF(size_t N, T b0, T bm);
-    T tick(T x);
     
+    T tick(T x);
     void setDelayLength(size_t N);
     
     T b0;
@@ -38,8 +38,8 @@ class FBCF
 public:
     FBCF();
     FBCF(size_t N, T b0, T am);
-    T tick(T x);
     
+    T tick(T x);
     void setDelayLength(size_t N);
     
     T b0;
@@ -56,14 +56,34 @@ class APCF
 public:
     APCF();
     APCF(size_t N, T g);
-    T tick(T x);
     
+    T tick(T x);
     void setGain(T gain);
     void setDelayLength(size_t N);
     
 protected:
     FFCF<T> _ff;
     FBCF<T> _fb;
+};
+
+
+template <typename T>
+class LBCF
+{
+public:
+    LBCF();
+    LBCF(size_t N, T f, T d);
+    
+    T tick(T x);
+    void setDelayLength(size_t N);
+    void setFilterParams(T f, T d);
+    
+protected:
+    DelayLine<T> _M;
+    OnePoleFilter<T> _opf;
+    
+    T _f;
+    T _d;
 };
 
 
@@ -181,4 +201,52 @@ void APCF<T>::setGain(T gain)
 {
     _ff.b0 = -gain;
     _fb.am = gain;
+}
+
+
+//--------------------------------------------------------------------------------//
+
+
+template <typename T>
+LBCF<T>::LBCF()
+{
+    _d = 0.5;
+    _f = 1.0;
+    _opf.b0 = 1 - _d;
+    _opf.a1 = -_d;
+}
+
+
+template <typename T>
+LBCF<T>::LBCF(size_t N, T f, T d)
+{
+    _M.setDelayLength(N);
+    setFilterParams(f, d);
+}
+
+
+template <typename T>
+T LBCF<T>::tick(T x)
+{
+    T v = _f * _opf.tick(_M.peek());
+    
+    return _M.tick(x + v);
+}
+
+
+template <typename T>
+void LBCF<T>::setDelayLength(size_t N)
+{
+    _M.setDelayLength(N);
+}
+
+
+template <typename T>
+void LBCF<T>::setFilterParams(T f, T d)
+{
+    _f = -f;
+    _d = d;
+    
+    _opf.b0 = 1 - _d;
+    _opf.a1 = -_d;
 }

@@ -38,6 +38,7 @@ DelayLine<T>::DelayLine()
 {
     _currentPtr = 0;
     _N = 1;
+    setDelayLength(_N);
 }
 
 
